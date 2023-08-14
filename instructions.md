@@ -69,7 +69,7 @@ Install the necessary packages into your virtual environment:
 pip install pygame neat-python
 ```
 
-Note: neat-python used to be neat, so be aware of that if you are working from an older version of Python.
+Note: neat is a different module, so even though it looks odd that we are downloading neat-python and later will call import neat, this is correct.
 
 Create a requirements.txt file to ensure that you have the necessary dependencies to run this code:
 
@@ -116,6 +116,53 @@ q
 ## Tech With Tim - Python Flappy Bird AI Tutorial (with NEAT)
 
 ### Video 1: Creating the Bird
+
+Let's start by programming the game and getting the graphics looking good, before doing anything with the AI.
+
+We need to import 2 modules:
+- pygame: cross-platform set of Python modules designed for writing video games
+    - Has computer graphics
+- neat-python: NEAT is a method developed by Kenneth O. Stanley for evolving arbitrary neural networks.
+    - NEAT-Python is a pure Python implementation of NEAT, with no dependencies other than the Python standard library.
+
+Next, we need the images for this game. They can be found at this link:
+
+[Link to download images](https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbUZSU1ZwSkxCZ0ZZdldBZVhRamJpVUpoSlBYQXxBQ3Jtc0tuQWxoSnA1N3hWbnZTVFB1cUFmbzFMNDA1bGNBUzl2cGtQTG9BYzZLTU5yRGpodTJySDRYWW96UE4xY3IwYmVESFVqLTgwTFJuVmFJaXVDNTRhcUtuMjdyV1BNalowLV8zUlpWaFQtaUdSUlV2VW9jZw&q=https%3A%2F%2Fdev-cms.us-east-1.linodeobjects.com%2Fimgs_b286d95d6d.zip&v=MMxFDaIOHsE)
+
+After downloading the .zip file, unzip its contents, and place the folder `imgs` inside of our root directory of `flappy_bird_ai`.
+
+Next, let's open up the Python Script (flappy_bird_tutorial.py) in Sublime Text, and begin coding:
+
+```py
+WIN_WIDTH = 600 # Use all capitals for constants!
+WIN_HEIGHT = 800
+
+BIRD_IMGS = [
+	pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird1.png"))),
+	pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird2.png"))),
+	pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird3.png"))),
+]
+
+PIPE_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird1.png")))
+BASE_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "base.png")))
+BG_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bg.png")))
+```
+
+Notes:
+- We wanted to start figuring out aspects of the game that we need. We are going to be using an object oriented programming approach, with these as our objects that we need classes for:
+    - Pipe
+    - Bird
+    - Ground
+
+- pygame.image.load: Loads an image 
+- pygame.transform.scale2x: Doubles the size of the image
+- 
+
+You can check that your code is working with no errors by running it in the virtual environment:
+
+```sh
+python flappy_bird_tutorial.py
+```
 
 ### Video 2: Moving Birds
 
