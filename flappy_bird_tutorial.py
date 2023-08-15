@@ -120,6 +120,96 @@ class Bird:
 		return pygame.mask.from_surface(self.img) # we will talk about 'mask' later
 
 
+# Class #2: The pipe
+class Pipe:
+	GAP = 200 # space between pipe
+	VEL = 5 # how fast our pipe will be moving (bird doesn't move, all of the objects on the screen are moving!)
+
+	def __init__(self, x): # why x and no y? the height of the tubes/where they show on the screen is randomized when a pipe is initialized!
+		self.x = x
+		self.height = 0
+		# self.gap = 100
+
+		# keeps track of where top AND bottom of the pipe is drawn
+		# - also getting images for top/bottom pipe
+		# - (must keep track of specific images, as we need vertical pipe and upside down pipe)
+		self.top = 0
+		self.bottom = 0
+		self.PIPE_TOP = pygame.transform.flip(PIPE_IMG, False, True)
+		self.PIPE_BOTTOM = PIPE_IMG
+
+		# if the bird is passed by the pipe (for collision purposes/AI)
+		self.passed = False
+		self.set_height() # where top/bottom/height is (randomly defined)
+
+	def set_height(self):
+		# get random number for where type should be
+		self.height = random.randrange(50, 450)
+		self.top = self.height - self.PIPE_TOP.get_height() # figure out top/left position (draw pipe at negative location so that bottom is in correct spot)
+		self.bottom = self.height + self.GAP
+
+	# easiest method: move (all we need to do is move the x position, based on velocity per frame)
+	def move(self):
+		self.x -= self.VEL
+
+	# draw: will draw top and bottom
+	def draw(self, win):
+		win.blit(self.PIPE_TOP, (self.x, self.top))
+		win.blit(self.PIPE_BOTTOM, (self.x, self.bottom))
+
+	# most difficult: pixel perfect collision
+	# - we draw boxes around each of our objects, check if they collide
+	# - (can be problematic, because)
+	def collide(self, bird, win):
+		# what a mask does: tells if any of the pixels in the boxes are actually touching/colliding 
+		bird_mask = bird.get_mask()
+		# create mask for top pipe AND bottom pipe
+		top_mask = pygame.mask.from_surface(self.PIPE_TOP)
+		bottom_mask = pygame.mask.from_surface(self.PIPE_BOTTOM)
+		# offset: how far the top left corners/masks are from each other (checks pixels up against each other)
+		top_offset = (self.x - bird.x, self.top - round(bird.y)) # round bc you cannot have negative values
+		bottom_offset = (self.x - bird.x, self.bottom - round(bird.y))
+		# figure out if masks collide by finding point of collision
+		b_point = bird_mask.overlap(bottom_mask, bottom_offset) # if they don't collide: function returns None
+		t_point = bird_mask.overlap(top_mask, top_offset) # if they don't collide: function returns None
+
+		if t_point or b_point: # if either is not None...
+			return True # collision! do something ie. make the bird die!
+		else:
+			return False # no collision - keep going
+
+# we need a class for base because it is going to be moving at the bottom
+class Base:
+	VEL = 5 # needs to be same as pipe!
+	WIDTH = BASE_IMG.get_width()
+	IMG = BASE_IMG
+
+	def __init__(self, y): # x is moving to left, don't need to define that
+		self.y = y
+		self.x1 = 0 # at 0 
+		self.x2 = self.WIDTH # directly behind the image
+
+	def move(self):
+		self.x1 -= self.VEL
+		self.x2 -= self.VEL
+
+		# What goes on here:
+		# - we are drawing 2 images for the base (they move at same VEL, so looks like 1 image)
+		# - when 1 image is totally off the screen and one is totally on, the one that is off, cycles to the back
+		# - (think of a circle of the 2 images moving)
+
+		# is it off the screen?
+		if self.x1 + self.WIDTH < 0:
+			self.x1 = self.x2 + self.WIDTH
+		# is it off the screen?
+		if self.x2 + self.WIDTH < 0:
+			self.x2 = self.x1 + self.WIDTH
+
+	def draw(self, win):
+		win.blit(self.IMG, (self.x1, self.y))
+		win.blit(self.IMG, (self.x2, self.y))
+		
+
 # method: draws window of our game
 def draw_window(win, bird):
 	win.blit(BG_IMG, (0,0)) # blit = draw on the window ; (0,0) = top left of screen
