@@ -3,6 +3,7 @@ import neat
 import time
 import os
 import random
+pygame.font.init() # fixes error: "pygame.error: font not initialized"
 
 # LOAD IN ALL IMAGES, SET DIMENSIONS FOR SCREEN
 print("setting dimensions...")
@@ -18,9 +19,12 @@ BIRD_IMGS = [
 	pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird3.png"))),
 ]
 
-PIPE_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird1.png")))
+PIPE_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "pipe.png")))
 BASE_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "base.png")))
 BG_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bg.png")))
+
+STAT_FONT = pygame.font.SysFont("comicsans", 50) # create a Font object from the system fonts
+
 
 # BEGIN WRITING CLASSES
 
@@ -160,7 +164,7 @@ class Pipe:
 	# most difficult: pixel perfect collision
 	# - we draw boxes around each of our objects, check if they collide
 	# - (can be problematic, because)
-	def collide(self, bird, win):
+	def collide(self, bird):
 		# what a mask does: tells if any of the pixels in the boxes are actually touching/colliding 
 		bird_mask = bird.get_mask()
 		# create mask for top pipe AND bottom pipe
@@ -208,19 +212,37 @@ class Base:
 	def draw(self, win):
 		win.blit(self.IMG, (self.x1, self.y))
 		win.blit(self.IMG, (self.x2, self.y))
-		
+
 
 # method: draws window of our game
-def draw_window(win, bird):
+def draw_window(win, bird, pipes, base, score):
 	win.blit(BG_IMG, (0,0)) # blit = draw on the window ; (0,0) = top left of screen
+
+	# pipes: list (we can have more than 1 pipe on the screen at once)
+	for pipe in pipes:
+		pipe.draw(win)
+
+	# font to tell us the score
+	text = STAT_FONT.render("Score: " + str(score), 1, (255,255,255)) # (255,255,255) = white
+	win.blit(text, (WIN_WIDTH - 10 - text.get_width(), 10))
+
+	# base: 1 base
+	base.draw(win)
+
+	# bird: 1 bird
 	bird.draw(win)
+	# 
 	pygame.display.update()
 
 # method: runs the main loop of our game
 def main():
-	bird = Bird(200,200) # create a bird object
+	bird = Bird(230,350) # create a bird object
+	base = Base(730) # base: bottom of screen at 730
+	pipes = [Pipe(600)] # 1 pipe with height 600
 	win = pygame.display.set_mode( (WIN_WIDTH, WIN_HEIGHT) ) # create window 
 	clock = pygame.time.Clock() # create a clock object to _
+
+	score = 0
 
 	# create while loop for main game window
 	run = True
@@ -232,9 +254,48 @@ def main():
 				# this will quit pygame
 				run = False
 
-		# gets called every frame so bird can tick
-		bird.move()
-		draw_window(win, bird)
+		# check for collision between Bird/Pipe
+		add_pipe = False # variable to decide if we need to add a new pipe later
+		rem = [] # list of pipes to remove
+		for pipe in pipes:
+			if pipe.collide(bird):
+				# if we collide: end the game!
+				pass
+			if pipe.x + pipe.PIPE_TOP.get_width() < 0:
+				# if pipe is off the screen, remove that pipe
+				# - cannot remove from for loop, but we will add to a list to remove
+				rem.append(pipe)
+
+			if not pipe.passed and pipe.x < bird.x:
+				# check if we have passed the pipe
+				pipe.passed = True
+				add_pipe = True
+
+			# finally, move the pipe if we make it this far! (the bird has passed all of the pipes)
+			pipe.move()
+
+		if add_pipe:
+			# we have passed a pipe, we need to add more pipes.
+			# - we have also scores, so increment that variable too
+			score += 1 # increment
+			pipes.append(Pipe(600)) # add a new pipe
+		
+		for r in rem:
+			# remove the pipes that we don't need anymore...
+			pipes.remove(r) 
+
+		# Check if bird hits the ground
+		if bird.y + bird.img.get_height() >= 730:
+			# if the bird hits the ground, _
+			pass
+
+
+		# These move functions: gets called every frame so bird can tick
+		# (commented out since we have AI move the bird, not our keyboard.)
+		#bird.move() # makes our bird fall down 
+		base.move()  # makes the base move, so that our bird is flying along
+
+		draw_window(win, bird, pipes, base, score)
 
 	pygame.quit() # quit pygame
 	quit() # quit program
