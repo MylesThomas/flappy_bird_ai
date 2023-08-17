@@ -1031,6 +1031,261 @@ q
 
 ### Video 5: NEAT Configuration and Explanation
 
+Let's try and understand the NEAT algorithm so that we have a general idea of what we are doing:
+
+#### Intro
+
+Intro to what we are doing here:
+
+- Flappy bird game is played completely at random
+	- As it keeps playing, it uses a genetic algorithm to learn how to play better
+		- After a few generations, the AI gets exponentially better, until it cannot be beat! (We will get a score into the 1000's)
+
+Neural networks:
+
+- Input layer: Known Information
+	- position of bird
+	- position of top pipe
+	- position of bottom pip
+
+- Output layer: What to do
+	- jump? or not?
+
+- Bias: Moves network up/down (error bias)
+
+- Activation function: Gets value to decide jump/not jump 
+	- TanH is used here
+		- ReLu and others exist
+
+Notes:
+- Each input layer has a connection/weight to the 1 output layer
+- This is a feed forward neural network
+
+NEAT: Neuroevolution of Augmenting Topologies
+
+- Natural selection: Learning and getting better until you are great
+	- initial population: 100 birds
+		- each bird has a neural network (with random weights/bias) that controls it
+		- we test each of these networks and evaluate their fit (how well they do)
+			- Fitness in this case: How far the bird travels without dying
+		- once the birds are done, we take the top performers
+			- with these top performers, we mutate/breed to create a new population
+				- we continue this iterative process until we are satisfied with the performance of the birds!
+
+References:
+- [Youtube - AI Teaches Itself to Play Flappy Bird](https://www.youtube.com/watch?v=OGHA-elMrxI)
+- [NEAT Documentation](https://neat-python.readthedocs.io/en/latest/config_file.html)
+- [NEAT Article](https://nn.cs.utexas.edu/downloads/papers/stanley.cec02.pdf)
+
+#### How NEAT works
+
+Basic level: NEAT is an evolving neural network
+- 3 input neurons
+- 1 output neuron
+- NEAT will randomly add/remove nodes and connections
+	- this is to try and find an architecture that will work
+	- starts simple, gets complex if it has to
+		- very good for us! (we would prefer a very easy neural network vs. complex)
+
+The things we need to give to the Neural Network to figure this out for us:
+
+#### Inputs / Information
+
+1. Inputs (Known Information)
+- if we don't have these right, we can never have a good neural network (it needs correct info...)
+- here is the info that should help NEAT figure out the patterns:
+	- position of bird (y position, since that's the only way the bird can move ie. jump)
+	- distance between bird and next top pipe
+	- distance between bird and next bottom pipe (may be unnecessary, but could help train network faster)
+
+#### Outputs
+
+2. Outputs (What button should we press/what do we do?)
+- Example: 4 output neurons (Move up/down/left/right)
+- Our Example: 1 output neuron (Jump/Don't jump)
+	- All the user can do is press space to jump
+
+#### Activation
+
+3. Activation Function
+- Not super important, but picks how to evaluate the output neuron
+- We will choose the output neuron activation function: TanH
+	- Hyperbolic tangent function
+		- The more positive a number is, the more likely it is a 1
+- We will let NEAT choose the other activation functions for other nodes
+
+Notes:
+- Other popular activation functions include Sigmoid/ReLu
+
+#### Population Size
+
+4. Population Size
+- Very arbitrary, you can pick any number and it will probably still end up working
+- We will start with 100 birds
+	- This is how many will be running each generation of the neural network
+		- For complex problems you may need 1000's, but we can probably go down to even like 10
+
+In general: Higher sample size, more variance in the result. (Our networks may become more complex)
+
+#### Fitness Function
+
+5. Fitness Function: Most important part of NEAT!!!
+- Evaluates how the birds perform
+	- We need this because we take the best birds from each generation
+		- Our AI will not work if we are grabbing sub-optimal birds
+
+Note: Flappy bird makes it easy because we can just pick the bird that goes the farthest in the game.
+
+Tweaks we can do with fitness to help birds get further:
+- 
+
+#### Max Generations
+
+6. Max Generations: The number of generations/iterations of the neural network/game
+- If our AI doesn't end up working after a lot of iterations, it probably won't work at all!
+- Our value: 30
+	- If we make it to 31 and we don't have a perfect bird, break
+
+#### Configuration File
+
+Configuration File: Very important for anytime you use the NEAT module
+- Sets parameters/values needed to run
+
+Download OR copy and paste the file from the following link and add it to your root directory as `flappy_bird_ai/config.feedforward.txt`:
+
+[]()
+
+What is actually going on in this config file:
+
+1. [NEAT]
+- fitness_criterion: determines how we get rid of the worst/keep the best birds (highest or lowest fitness would take min)
+	- possible values: min/max/mean
+	- our choice: max
+
+- fitness_threshold: what level do we need to reach before terminating the program
+	- our choice: 100
+		- if a bird gets to 100, we can stop the program
+
+- pop_size: number of birds per generation
+	- our choice: 50 or 100
+
+- reset_on_extinction: If we have a species go extinct, do we reset the values?
+	- our choice: false
+
+2. [DefaultGenome]
+
+Note: Birds = Genome
+- genome have the following:
+	- nodes: input nodes/output nodes
+	- genes: the connections between those nodes
+- We are setting what each member of our population starts out with (the values below)
+
+- activation_default: The activation function
+	- our choice: tanh
+
+- activation_mutate_rate: The probability of selecting an activation function by random
+	- our choice: 0.0
+		- 0% chance that we get anything besides tanh
+
+- activation_options: Options we can choose from as activation functions (if mutate_rate is used)
+	- our choice: tanh
+		- this does not matter.
+
+Node activation options:
+
+- aggregation_default: 
+	- our choice: sum
+
+- aggregation_mutate_rate: 
+	- our choice: 0.0
+
+- aggregation_options: 
+	- our choice: sum
+
+Node bias options: (Initial connections we have, how likely they are to change)
+
+- bias_init_mean: Mean value for bias
+	- our choice: 0.0
+
+- bias_init_stdev: Standard deviation for bias
+	- our choice: 1.0
+
+- bias_max_value: Max value for bias
+	- our choice: 30.0
+
+- bias_min_value: Min value for bias
+	- our choice: -30.0
+
+The following 3 are how likely the above will change with a new set/generation of birds. (These values work the best)
+
+- bias_mutate_power: 
+	- our choice: 0.5
+
+- bias_mutate_rate: 
+	- our choice: 0.7
+
+- bias_replace_rate: 
+	- our choice: 0.1
+
+Remember: We are randomly assigning the neural networks, so we want the bias values to be normal ie. not -100000
+
+Connection add/remove rates:
+
+- conn_add_prob: How likely that we add a new connection
+	- our choice: 0.5
+
+- conn_delete_prob: How likely that we remove a new connection
+	- our choice: 0.5
+
+Connection enable options:
+
+- enabled_default: We can have connections that are enabled or not enabled
+	- our choice: True
+		- by default: All are active
+
+- enabled_mutate_rate: 
+	- our choice: 0.01
+		- ie. 1% chance it gets deactivated
+
+- feed_forward: If we are using a forward feeding NN
+	- our choice: True
+
+- initial_connection: 
+	- our choice: full
+		- fully connected layers to start
+
+Node add/remove rates:
+
+- node_add_prob: Probability of adding a node
+	- our choice: 0.2
+
+- node_delete_prob: Probability of deleting a node
+	- our choice: 0.2
+
+Network parameters (Very important - Settings amount of neurons for the neural network):
+
+- num_hidden: Number of hidden layers
+	- our choice: 0
+
+- num_inputs: Number of inputs neurons
+	- our choice: 3
+		- bird, top pipe, bottom pipe
+
+- num_outputs: Number of outputs neurons
+	- our choice: 1
+		- jump/not jum
+
+[DefaultStagnation]
+
+- species_fitness_function: Similar to above where we want birds with max score
+	- our choice: max
+
+- max_stagnation: If we go 20 generations without increasing fitness
+	- our choice: 20
+		- if we have 20 straight without improvements, the species is eliminated
+
+- species_elitism: 
+
 ### Video 6: Implementing NEAT/Creating Fitness Function
 
 ### Video 7: Finishing Touches and Testing
