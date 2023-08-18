@@ -235,8 +235,28 @@ def draw_window(win, bird, pipes, base, score):
 	pygame.display.update()
 
 # method: runs the main loop of our game
-def main():
-	bird = Bird(230,350) # create a bird object
+# - need: genomes, config
+def main(genomes, config):
+	# bird = Bird(230,350) # create a bird object
+	# keep track of neural network that controlls each bird!
+	# - need to know so we can change genomo fitness, based on how it performed
+	nets = [] # 
+	ge = []
+	birds = []
+
+	for g in genomes:
+		# setup a neural network for each genome...
+		# keep track of genome in a list
+		# - all the lists will correspond with one another
+
+		net = neat.nn.FeedForwardNetwork(g, config) # create net, make sure to give it the config file
+		nets.append(net) # append to list
+		birds.append(Bird(230, 350)) # append to list
+
+		g.fitness = 0 # init fitness at 0 for each genome
+		ge.append(g) # append to list
+
+
 	base = Base(730) # base: bottom of screen at 730
 	pipes = [Pipe(600)] # 1 pipe with height 600
 	win = pygame.display.set_mode( (WIN_WIDTH, WIN_HEIGHT) ) # create window 
@@ -258,18 +278,24 @@ def main():
 		add_pipe = False # variable to decide if we need to add a new pipe later
 		rem = [] # list of pipes to remove
 		for pipe in pipes:
-			if pipe.collide(bird):
-				# if we collide: end the game!
-				pass
+			for x, bird in enumerate(birds):
+				if pipe.collide(bird):
+					# OLD: if a bird collides: end the game for that bird! and make sure the 
+					ge[x].fitness -= 1 # when a bird hits a pipe, remove 1 from fitness score (don't reward birds who keep hitting pipes)
+					birds.pop(x) # remove bird from screen
+					nets.pop(x) # remove neural net
+					ge.pop(x) # remove genome
+
+
+				if not pipe.passed and pipe.x < birds.x:
+					# check if birds have passed by the pipe
+					pipe.passed = True
+					add_pipe = True
+
 			if pipe.x + pipe.PIPE_TOP.get_width() < 0:
 				# if pipe is off the screen, remove that pipe
 				# - cannot remove from for loop, but we will add to a list to remove
 				rem.append(pipe)
-
-			if not pipe.passed and pipe.x < bird.x:
-				# check if we have passed the pipe
-				pipe.passed = True
-				add_pipe = True
 
 			# finally, move the pipe if we make it this far! (the bird has passed all of the pipes)
 			pipe.move()
@@ -277,17 +303,25 @@ def main():
 		if add_pipe:
 			# we have passed a pipe, we need to add more pipes.
 			# - we have also scores, so increment that variable too
-			score += 1 # increment
+			score += 1 # increment score
+			# increase fitness score for getting through the pipe (encourage them to go through the pipe!!)
+			for g in ge:
+				g.fitness += 5
 			pipes.append(Pipe(600)) # add a new pipe
+
 		
 		for r in rem:
 			# remove the pipes that we don't need anymore...
 			pipes.remove(r) 
 
-		# Check if bird hits the ground
-		if bird.y + bird.img.get_height() >= 730:
-			# if the bird hits the ground, _
-			pass
+		# Check if any of the birds hit the ground
+		for x, bird in enumerate(birds):
+			if bird.y + bird.img.get_height() >= 730:
+				# if the bird hits the ground, pop from program/screen
+				birds.pop(x)
+				nets.pop(x)
+				ge.pop(x)
+
 
 
 		# These move functions: gets called every frame so bird can tick
@@ -303,3 +337,36 @@ def main():
 
 # Call the main function
 main()
+
+# Method that 
+def run(config_path):
+	# load in the config
+	config = neat.config.Config(
+		# it assumes neat.NEAT, so no need to include that here
+		neat.DefaultGenome, # define sub-headings
+		neat.DefaultReproduction,
+		neat.DefaultSpeciesSet,
+		neat.DefaultStagnation,
+		config_path,
+	)
+
+	# generate a population, based on what is in the config file
+	p = neat.Population(config)
+
+	# create stats reporters (gives us output when we are running the algorithm, think verbose in command line)
+	p.add_reporter(neat.StdOutReporter(True)) # gives stats
+	# 
+	stats = neat.StatisticsReporter()
+	p.add_reporter(stats)
+	# choose winner / setting fitness function
+	# - fitness function: how far it moves in the game
+	# - this makes main() the fitness function (it gets called 50 times, passes all of the Genome + config file)
+	winner = p.run(main, 50) # 50 = 50 generations
+
+
+if __main__ == "__main__":
+	# 
+	local_dir = os.path.dirname(__file__) # gives path to the directory we are in (need to load in config file)
+	config_path = os.path.join(local_dir, "config-feedforward.txt") # config path
+
+	run(config_path)

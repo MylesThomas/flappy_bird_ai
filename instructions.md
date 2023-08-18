@@ -1284,8 +1284,58 @@ Network parameters (Very important - Settings amount of neurons for the neural n
 	- our choice: 20
 		- if we have 20 straight without improvements, the species is eliminated
 
-- species_elitism: 
+#### Git
+
+Updating git repo:
+
+```sh
+cd flappy_bird_ai
+
+git status
+git add .
+git commit -m "Completed Video #5 - NEAT Configuration and Explanation"
+git push -u origin main
+git status
+git log --oneline
+q
+```
 
 ### Video 6: Implementing NEAT/Creating Fitness Function
+
+#### Coding
+
+What we do in this video:
+- Create function, run
+- Create function, _
+- get path to + load up the configuration file from last video
+
+...
+
+
+
+
+#### Fitness Function
+
+
+
+#### Removing Birds
+
+
+
+#### Git
+
+Updating git repo:
+
+```sh
+cd flappy_bird_ai
+
+git status
+git add .
+git commit -m "Completed Video #6 - Implementing NEAT/Creating Fitness Function"
+git push -u origin main
+git status
+git log --oneline
+q
+```
 
 ### Video 7: Finishing Touches and Testing
