@@ -25,6 +25,11 @@ BG_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bg.png
 
 STAT_FONT = pygame.font.SysFont("comicsans", 50) # create a Font object from the system fonts
 
+GEN = 0
+
+# ADDED BECAUSE OF GITHUB CODE
+pygame.display.set_caption("Flappy Bird")
+
 
 # BEGIN WRITING CLASSES
 
@@ -215,7 +220,7 @@ class Base:
 
 
 # method: draws window of our game
-def draw_window(win, bird, pipes, base, score):
+def draw_window(win, birds, pipes, base, score, gen):
 	win.blit(BG_IMG, (0,0)) # blit = draw on the window ; (0,0) = top left of screen
 
 	# pipes: list (we can have more than 1 pipe on the screen at once)
@@ -226,17 +231,31 @@ def draw_window(win, bird, pipes, base, score):
 	text = STAT_FONT.render("Score: " + str(score), 1, (255,255,255)) # (255,255,255) = white
 	win.blit(text, (WIN_WIDTH - 10 - text.get_width(), 10))
 
+	text = STAT_FONT.render("Gen: " + str(gen), 1, (255,255,255)) # (255,255,255) = white
+	win.blit(text, (10, 10)) # position: 10,10 (top left)
+
+
+
 	# base: 1 base
 	base.draw(win)
 
 	# bird: 1 bird
-	bird.draw(win)
+	# bird.draw(win)
+
+	# correction: draw all of the birds, not just 1!
+	for bird in birds:
+		bird.draw(win)
+
 	# 
 	pygame.display.update()
 
 # method: runs the main loop of our game
 # - need: genomes, config
 def main(genomes, config):
+	# Global Generation
+	global GEN
+	GEN += 1
+
 	# bird = Bird(230,350) # create a bird object
 	# keep track of neural network that controlls each bird!
 	# - need to know so we can change genomo fitness, based on how it performed
@@ -244,12 +263,14 @@ def main(genomes, config):
 	ge = []
 	birds = []
 
-	for g in genomes:
+	# 
+
+	for _, g in genomes: # genomes is a tuple with id and object (1, genome)
 		# setup a neural network for each genome...
 		# keep track of genome in a list
 		# - all the lists will correspond with one another
 
-		net = neat.nn.FeedForwardNetwork(g, config) # create net, make sure to give it the config file
+		net = neat.nn.FeedForwardNetwork.create(g, config) # create net, make sure to give it the config file
 		nets.append(net) # append to list
 		birds.append(Bird(230, 350)) # append to list
 
@@ -273,6 +294,39 @@ def main(genomes, config):
 			if event.type == pygame.QUIT:
 				# this will quit pygame
 				run = False
+				pygame.quit()
+				quit()
+
+
+		# add logic to check for which of the 2 pipes ...
+		pipe_ind = 0 # we are making the input to the neural network the 1st pipe
+		if len(birds) > 0:
+			# if ...
+			if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
+				# if we have passed those pipes,
+				pipe_ind = 1 # we are making the input to the neural network the 2nd pipe
+
+		# if we have no birds left... we want to quit this generation / stop running game
+		else:
+			run = False
+			break
+
+
+		# move all birds
+		for x, bird in enumerate(birds):
+			# pass values to the neural network
+			# - neural network associated with this bird will now get its output value, and check if it is greater than 0.5
+			# - if greater than 0.5, jump, if not, don't jump
+			bird.move()
+			ge[x].fitness += 0.1 # small fitness: this loop runs 30 times per second, so ends up being 3 fitness/second
+
+			# activate neural network
+			output = nets[x].activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom))) # find distance in y between top and bird
+
+			# check if 1st (and only value) in output neurons list is greater than 0.5
+			if output[0] > 0.5:
+				bird.jump()
+
 
 		# check for collision between Bird/Pipe
 		add_pipe = False # variable to decide if we need to add a new pipe later
@@ -287,7 +341,7 @@ def main(genomes, config):
 					ge.pop(x) # remove genome
 
 
-				if not pipe.passed and pipe.x < birds.x:
+				if not pipe.passed and pipe.x < bird.x:
 					# check if birds have passed by the pipe
 					pipe.passed = True
 					add_pipe = True
@@ -314,9 +368,9 @@ def main(genomes, config):
 			# remove the pipes that we don't need anymore...
 			pipes.remove(r) 
 
-		# Check if any of the birds hit the ground
+		# Check if any of the birds hit the ground OR if they hit the top
 		for x, bird in enumerate(birds):
-			if bird.y + bird.img.get_height() >= 730:
+			if bird.y + bird.img.get_height() >= 730 or bird.y < 0:
 				# if the bird hits the ground, pop from program/screen
 				birds.pop(x)
 				nets.pop(x)
@@ -329,14 +383,14 @@ def main(genomes, config):
 		#bird.move() # makes our bird fall down 
 		base.move()  # makes the base move, so that our bird is flying along
 
-		draw_window(win, bird, pipes, base, score)
+		draw_window(win, birds, pipes, base, score, GEN)
 
-	pygame.quit() # quit pygame
-	quit() # quit program
+	# pygame.quit() # quit pygame
+	# quit() # quit program
 
 
-# Call the main function
-main()
+# # Call the main function
+# main()
 
 # Method that 
 def run(config_path):
@@ -364,9 +418,17 @@ def run(config_path):
 	winner = p.run(main, 50) # 50 = 50 generations
 
 
-if __main__ == "__main__":
+if __name__ == "__main__":
 	# 
 	local_dir = os.path.dirname(__file__) # gives path to the directory we are in (need to load in config file)
-	config_path = os.path.join(local_dir, "config-feedforward.txt") # config path
+	config_path = os.path.join(local_dir, "config.feedforward.txt") # config path
+
+	print(f"local_dir: {local_dir}")
+
+	print(f"config_path: {config_path}") # "C:\Users\Myles\flappy_bird_ai\config.feedforward.txt"
+
+	print("starting game...")
+
 
 	run(config_path)
+
